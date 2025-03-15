@@ -1,102 +1,86 @@
-import cv2
-import xml.etree.ElementTree as ET
-from dataclasses import dataclass
+import torch
+import torch.optim as optim
+
+from torch.utils.data import random_split
+from torch.utils.data import DataLoader
+
+from dataset import RoadDamageDataset
+from model import Model
 
 
-@dataclass
-class BoundingBox:
-    xmin: int
-    ymin: int
-    xmax: int
-    ymax: int
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+# Load the dataset
+data = RoadDamageDataset(dir="./dataset/united_states", split="train")
+train_size = int(0.8 * len(data))
+val_size = len(data) - train_size
+train_data, val_data = random_split(data, [train_size, val_size])
 
-@dataclass
-class AnnotationObject:
-    name: str
-    pose: str
-    truncated: bool
-    difficult: bool
-    bndbox: BoundingBox
+test_data = RoadDamageDataset(dir="./dataset/united_states", split="test")
 
+train_loader = DataLoader(
+    train_data,
+    batch_size=4,
+    shuffle=True,
+    collate_fn=lambda batch: tuple(zip(*batch)),
+)
 
-@dataclass
-class Annotation:
-    filename: str
-    size: tuple[int, int, int]
-    segmented: bool
-    objects: list[AnnotationObject]
+val_loader = DataLoader(
+    val_data,
+    batch_size=4,
+    shuffle=False,
+    collate_fn=lambda batch: tuple(zip(*batch)),
+)
 
+# Define the model
+model = Model(num_classes=5)  # 4 road damage classes and 1 background
+model.to(device)
 
-def parse(annotation_path: str) -> Annotation:
-    tree = ET.parse(annotation_path)
-    root = tree.getroot()
+# Optimizer
+params = [p for p in model.parameters() if p.requires_grad]
+optimizer = optim.AdamW(params, lr=0.001, weight_decay=0.0005)
+lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.9)
 
-    filename = root.find("filename").text
+# Training loop
+num_epochs = 100
 
-    size = root.find("size")
-    width = int(size.find("width").text)
-    height = int(size.find("height").text)
-    depth = int(size.find("depth").text)
-    size = [width, height, depth]
+for epoch in range(num_epochs):
+    model.train()
+    total_loss = 0
 
-    segmented = False if root.find("segmented").text == "0" else True
+    for images, targets in train_loader:
+        images = [i.to(device) for i in images]
+        targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-    objects = []
+        # Forward pass
+        loss_dict = model(images, targets)
+        loss = sum(l for l in loss_dict.values())
 
-    for o in root.findall("object"):
-        name = o.find("name").text
-        pose = o.find("pose").text
-        truncated = False if o.find("truncated").text == "0" else True
-        difficult = False if o.find("difficult").text == "0" else True
+        # Backpropagation
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
-        bndbox = o.find("bndbox")
-        xmin = int(bndbox.find("xmin").text)
-        ymin = int(bndbox.find("ymin").text)
-        xmax = int(bndbox.find("xmax").text)
-        ymax = int(bndbox.find("ymax").text)
-        bndbox = BoundingBox(xmin, ymin, xmax, ymax)
+        total_loss += loss.item()
 
-        objects.append(AnnotationObject(name, pose, truncated, difficult, bndbox))
+    # Validate the model
+    model.eval()
+    total_val_loss = 0
 
-    annotation = Annotation(filename, size, segmented, objects)
+    with torch.no_grad():
+        for images, targets in val_loader:
+            images = [i.to(device) for i in images]
+            targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-    return annotation
+            predictions = model(images, targets)
+            score = torch.mean(
+                torch.stack([torch.mean(p["scores"]) for p in predictions])
+            )
 
+    lr_scheduler.step()
 
-def visualize_annotation(image_path: str, annotation: Annotation):
-    image = cv2.imread(image_path)
-    for o in annotation.objects:
-        bndbox = o.bndbox
-        cv2.rectangle(
-            img=image,
-            pt1=(bndbox.xmin, bndbox.ymin),
-            pt2=(bndbox.xmax, bndbox.ymax),
-            color=(0, 255, 0),
-            thickness=2,
-        )
-        cv2.putText(
-            img=image,
-            text=o.name,
-            org=(bndbox.xmin, bndbox.ymin - 5),
-            color=(0, 255, 0),
-            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-            fontScale=0.5,
-            thickness=2,
-        )
-
-    cv2.imshow(annotation.filename, image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    image_path = "./dataset/United_States/train/images/United_States_000001.jpg"
-    annotation_path = (
-        "./dataset/United_States/train/annotations/xmls/United_States_000001.xml"
+    print(
+        f"Epoch: [{epoch}/{num_epochs}], Train Loss: {total_loss:.4f}, Val Score: {score:.4f}"
     )
 
-    annotation = parse(annotation_path)
-    print(annotation)
-
-    visualize_annotation(image_path, annotation)
+    torch.save(model.state_dict(), f"road_damage_detector.pth")

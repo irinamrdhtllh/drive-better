@@ -10,7 +10,13 @@ from model import Model
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Load the dataset
+# Load the train and validation dataset
+# czech_data = RoadDamageDataset(dir="./dataset/czech", split="train")
+# india_data = RoadDamageDataset(dir="./dataset/india", split="train")
+# japan_data = RoadDamageDataset(dir="./dataset/japan", split="train")
+# norway_data = RoadDamageDataset(dir="./dataset/norway", split="train")
+# us_data = RoadDamageDataset(dir="./dataset/united_states", split="train")
+
 data = RoadDamageDataset(dir="./dataset/united_states", split="train")
 train_size = int(0.8 * len(data))
 val_size = len(data) - train_size
@@ -20,14 +26,14 @@ test_data = RoadDamageDataset(dir="./dataset/united_states", split="test")
 
 train_loader = DataLoader(
     train_data,
-    batch_size=4,
+    batch_size=1,
     shuffle=True,
     collate_fn=lambda batch: tuple(zip(*batch)),
 )
 
 val_loader = DataLoader(
     val_data,
-    batch_size=4,
+    batch_size=1,
     shuffle=False,
     collate_fn=lambda batch: tuple(zip(*batch)),
 )
@@ -38,7 +44,7 @@ model.to(device)
 
 # Optimizer
 params = [p for p in model.parameters() if p.requires_grad]
-optimizer = optim.AdamW(params, lr=0.001, weight_decay=0.0005)
+optimizer = optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
 lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.9)
 
 # Training loop
@@ -46,22 +52,22 @@ num_epochs = 100
 
 for epoch in range(num_epochs):
     model.train()
-    total_loss = 0
+    total_train_loss = 0
 
     for images, targets in train_loader:
         images = [i.to(device) for i in images]
         targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
         # Forward pass
-        loss_dict = model(images, targets)
-        loss = sum(l for l in loss_dict.values())
+        losses, detections = model(images, targets)
+        loss = sum(l for l in losses.values())
 
         # Backpropagation
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        total_loss += loss.item()
+        total_train_loss += loss.item()
 
     # Validate the model
     model.eval()
@@ -72,15 +78,15 @@ for epoch in range(num_epochs):
             images = [i.to(device) for i in images]
             targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-            predictions = model(images, targets)
-            score = torch.mean(
-                torch.stack([torch.mean(p["scores"]) for p in predictions])
-            )
+            losses, detections = model(images, targets)
+            loss = sum(l for l in losses.values())
+
+            total_val_loss += loss.item()
 
     lr_scheduler.step()
 
     print(
-        f"Epoch: [{epoch}/{num_epochs}], Train Loss: {total_loss:.4f}, Val Score: {score:.4f}"
+        f"Epoch: [{epoch}/{num_epochs}], Train Loss: {total_train_loss:.4f}, Val Loss: {total_val_loss:.4f}"
     )
 
     torch.save(model.state_dict(), f"road_damage_detector.pth")

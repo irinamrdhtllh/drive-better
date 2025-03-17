@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from faster_rcnn import fasterrcnn_resnet50_fpn
+from models.faster_rcnn import fasterrcnn_resnet50_fpn
 
 
 class Model(nn.Module):

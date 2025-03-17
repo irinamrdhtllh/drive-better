@@ -17,9 +17,9 @@ from torchvision.models.detection.backbone_utils import (
     _resnet_fpn_extractor,
     _validate_trainable_layers,
 )
-from generalized_rcnn import GeneralizedRCNN
-from roi_heads import RoIHeads
-from rpn import RegionProposalNetwork, RPNHead
+from models.generalized_rcnn import GeneralizedRCNN
+from models.roi_heads import RoIHeads
+from models.rpn import RegionProposalNetwork, RPNHead
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 
 

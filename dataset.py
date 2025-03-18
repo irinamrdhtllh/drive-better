@@ -62,14 +62,14 @@ class RoadDamageDataset(Dataset):
         depth = int(size.find("depth").text)
         size = Size(width, height, depth)
 
-        segmented = False if root.find("segmented").text == "0" else True
+        segmented = False if parse_xml_node(root, "segmented") == "0" else True
 
         objects = []
         for o in root.findall("object"):
             name = o.find("name").text
-            pose = o.find("pose").text
-            truncated = False if o.find("truncated").text == "0" else True
-            difficult = False if o.find("difficult").text == "0" else True
+            pose = parse_xml_node(root, "pose")
+            truncated = False if parse_xml_node(root, "truncated") == "0" else True
+            difficult = False if parse_xml_node(root, "difficult") == "0" else True
 
             bndbox = o.find("bndbox")
             xmin = int(bndbox.find("xmin").text)
@@ -86,10 +86,10 @@ class RoadDamageDataset(Dataset):
 
     def class_to_label(self, class_name: str) -> int:
         class_map = {
-            "D00": 1,
-            "D10": 2,
-            "D20": 3,
-            "D40": 4,
+            "D00": 1,  # Longitudinal crack
+            "D10": 2,  # Transverse crack
+            "D20": 3,  # Alligator crack
+            "D40": 4,  # Pothole
         }
         return class_map.get(class_name, 0)
 
@@ -104,13 +104,26 @@ class RoadDamageDataset(Dataset):
         boxes = []
         labels = []
 
-        for o in annotation.objects:
-            boxes.append([o.bndbox.xmin, o.bndbox.ymin, o.bndbox.xmax, o.bndbox.ymax])
-            labels.append(self.class_to_label(o.name))
+        if annotation.objects:
+            for o in annotation.objects:
+                boxes.append(
+                    [o.bndbox.xmin, o.bndbox.ymin, o.bndbox.xmax, o.bndbox.ymax]
+                )
+                labels.append(self.class_to_label(o.name))
+        boxes = (
+            torch.tensor(boxes, dtype=torch.float32)
+            if boxes
+            else torch.zeros((0, 4), dtype=torch.float32)
+        )
+        labels = (
+            torch.tensor(labels, dtype=torch.int64)
+            if labels
+            else torch.zeros((0,), dtype=torch.int64)
+        )
 
         target = {
-            "boxes": torch.tensor(boxes, dtype=torch.float32),
-            "labels": torch.tensor(labels, dtype=torch.int64),
+            "boxes": boxes,
+            "labels": labels,
         }
 
         return image, target
@@ -133,3 +146,10 @@ class RoadDamageDataset(Dataset):
 
     def __len__(self):
         return len(self.images)
+
+
+def parse_xml_node(root: ET.Element, node_name: str):
+    element = root.find(node_name)
+    if element:
+        return element.text
+    return None

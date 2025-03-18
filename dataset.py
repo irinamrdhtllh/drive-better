@@ -1,5 +1,6 @@
 import os
 import cv2
+import time
 import torch
 import torchvision.transforms as T
 import xml.etree.ElementTree as ET
@@ -49,6 +50,13 @@ class RoadDamageDataset(Dataset):
             os.path.join(dir, split, "annotations/xmls") if split == "train" else None
         )
         self.images = os.listdir(self.image_dir)
+        self.annotations = {}
+        for image_filename in self.images:
+            annotation_path = os.path.join(
+                self.annotation_dir, image_filename.replace(".jpg", ".xml")
+            )
+            annotation = self.parse_annotation(annotation_path)
+            self.annotations[image_filename] = annotation
 
     def parse_annotation(self, path: str) -> Annotation:
         tree = ET.parse(path)
@@ -59,7 +67,7 @@ class RoadDamageDataset(Dataset):
         size = root.find("size")
         width = int(size.find("width").text)
         height = int(size.find("height").text)
-        depth = int(size.find("depth").text)
+        depth = int(size.find("depth").text) if size.find("depth") else None
         size = Size(width, height, depth)
 
         segmented = False if parse_xml_node(root, "segmented") == "0" else True
@@ -72,10 +80,12 @@ class RoadDamageDataset(Dataset):
             difficult = False if parse_xml_node(root, "difficult") == "0" else True
 
             bndbox = o.find("bndbox")
-            xmin = int(bndbox.find("xmin").text)
-            ymin = int(bndbox.find("ymin").text)
-            xmax = int(bndbox.find("xmax").text)
-            ymax = int(bndbox.find("ymax").text)
+            xmin = float(bndbox.find("xmin").text)
+            ymin = float(bndbox.find("ymin").text)
+            xmax = float(bndbox.find("xmax").text)
+            ymax = float(bndbox.find("ymax").text)
+            if xmax - xmin < 1e-9 or ymax - ymin < 1e-9:
+                continue
             bndbox = BoundingBox(xmin, ymin, xmax, ymax)
 
             objects.append(AnnotationObject(name, pose, truncated, difficult, bndbox))
@@ -137,12 +147,7 @@ class RoadDamageDataset(Dataset):
         if self.annotation_dir is None:
             return self.to_tensor(image, None)
 
-        annotation_path = os.path.join(
-            self.annotation_dir, image_filename.replace(".jpg", ".xml")
-        )
-        annotation = self.parse_annotation(annotation_path)
-
-        return self.to_tensor(image, annotation)
+        return self.to_tensor(image, self.annotations[image_filename])
 
     def __len__(self):
         return len(self.images)

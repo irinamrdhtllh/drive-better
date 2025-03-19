@@ -1,44 +1,12 @@
 import os
 import cv2
-import time
 import torch
 import torchvision.transforms as T
-import xml.etree.ElementTree as ET
 
-from dataclasses import dataclass
 from torch.utils.data import Dataset
 
-
-@dataclass
-class Size:
-    width: int
-    height: int
-    depth: int
-
-
-@dataclass
-class BoundingBox:
-    xmin: int
-    ymin: int
-    xmax: int
-    ymax: int
-
-
-@dataclass
-class AnnotationObject:
-    name: str
-    pose: str
-    truncated: bool
-    difficult: bool
-    bndbox: BoundingBox
-
-
-@dataclass
-class Annotation:
-    filename: str
-    size: Size
-    segmented: bool
-    objects: list[AnnotationObject]
+from annotation import Annotation
+from utils import parse_annotation
 
 
 class RoadDamageDataset(Dataset):
@@ -55,44 +23,8 @@ class RoadDamageDataset(Dataset):
             annotation_path = os.path.join(
                 self.annotation_dir, image_filename.replace(".jpg", ".xml")
             )
-            annotation = self.parse_annotation(annotation_path)
+            annotation = parse_annotation(annotation_path)
             self.annotations[image_filename] = annotation
-
-    def parse_annotation(self, path: str) -> Annotation:
-        tree = ET.parse(path)
-        root = tree.getroot()
-
-        filename = root.find("filename").text
-
-        size = root.find("size")
-        width = int(size.find("width").text)
-        height = int(size.find("height").text)
-        depth = int(size.find("depth").text) if size.find("depth") else None
-        size = Size(width, height, depth)
-
-        segmented = False if parse_xml_node(root, "segmented") == "0" else True
-
-        objects = []
-        for o in root.findall("object"):
-            name = o.find("name").text
-            pose = parse_xml_node(root, "pose")
-            truncated = False if parse_xml_node(root, "truncated") == "0" else True
-            difficult = False if parse_xml_node(root, "difficult") == "0" else True
-
-            bndbox = o.find("bndbox")
-            xmin = float(bndbox.find("xmin").text)
-            ymin = float(bndbox.find("ymin").text)
-            xmax = float(bndbox.find("xmax").text)
-            ymax = float(bndbox.find("ymax").text)
-            if xmax - xmin < 1e-9 or ymax - ymin < 1e-9:
-                continue
-            bndbox = BoundingBox(xmin, ymin, xmax, ymax)
-
-            objects.append(AnnotationObject(name, pose, truncated, difficult, bndbox))
-
-        annotation = Annotation(filename, size, segmented, objects)
-
-        return annotation
 
     def class_to_label(self, class_name: str) -> int:
         class_map = {
@@ -151,10 +83,3 @@ class RoadDamageDataset(Dataset):
 
     def __len__(self):
         return len(self.images)
-
-
-def parse_xml_node(root: ET.Element, node_name: str):
-    element = root.find(node_name)
-    if element:
-        return element.text
-    return None

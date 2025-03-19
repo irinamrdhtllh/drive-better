@@ -1,0 +1,23 @@
+import torch
+
+from tqdm import tqdm
+
+
+def test(model, test_data, device="cpu"):
+    model.load_state_dict(torch.load("./road_damage_detector.pth", map_location=device))
+    model.to(device)
+    model.eval()
+
+    predictions = []
+    targets = []
+    with torch.no_grad():
+        for i in tqdm(range(len(test_data)), desc="Testing Progress"):
+            image, target = test_data[i]
+            image = image.to(device)
+            prediction = model([image])
+            predictions.append(prediction)
+
+            if target is not None:
+                targets.append(target)
+
+    return predictions, targets if targets else None

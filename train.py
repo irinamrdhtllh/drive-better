@@ -2,6 +2,7 @@ import torch
 import torch.optim as optim
 
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 
 from utils import collate_fn
 
@@ -38,7 +39,11 @@ def train(
         model.train()
         total_train_loss = 0
 
-        for images, targets in train_loader:
+        train_bar = tqdm(
+            train_loader, desc=f"Epoch {epoch + 1}/{num_epochs} [Training]", leave=False
+        )
+
+        for images, targets in train_bar:
             images = [i.to(device) for i in images]
             targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
@@ -59,8 +64,12 @@ def train(
         model.eval()
         total_val_loss = 0
 
+        val_bar = tqdm(
+            val_loader, desc=f"Epoch {epoch + 1}/{num_epochs} [Validation]", leave=False
+        )
+
         with torch.no_grad():
-            for images, targets in val_loader:
+            for images, targets in val_bar:
                 images = [i.to(device) for i in images]
                 targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 

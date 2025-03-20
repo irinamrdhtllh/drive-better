@@ -11,7 +11,7 @@ def test(model, test_data, device="cpu"):
     predictions = []
     targets = []
     with torch.no_grad():
-        for i in tqdm(range(len(test_data)), desc="Testing Progress"):
+        for i in tqdm(range(len(test_data)), desc="Testing"):
             image, target = test_data[i]
             image = image.to(device)
             _, prediction = model([image])

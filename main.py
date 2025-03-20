@@ -52,7 +52,7 @@ if __name__ == "__main__":
         val_size = len(train_data) - train_size
         train_data, val_data = random_split(train_data, [train_size, val_size])
 
-        print("Dataset loaded successfully. Starting training.")
+        print("Dataset loaded successfully. Start training the model.")
 
         model = Model(num_classes=5).to(device)
         params = [p for p in model.parameters() if p.requires_grad]
@@ -71,11 +71,16 @@ if __name__ == "__main__":
     elif args.mode == "test":
         test_data = load_datasets(split="test")
 
+        print("Dataset loaded sucessfully. Start testing the model.")
+
         model = Model(num_classes=5).to(device)
         predictions, targets = test(model, test_data, device)
 
+        # TODO: print metrics
+
         if targets is not None:
-            sample_data = test_data.datasets[0]
+            # Visualize ground truth and predictions
+            sample_data = test_data.datasets[5]
             image_filename = sample_data.images[1] if sample_data.images else None
             if image_filename:
                 image_path = os.path.join(sample_data.image_dir, image_filename)

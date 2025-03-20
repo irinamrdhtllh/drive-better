@@ -1,12 +1,10 @@
 import os
 import cv2
 import torch
-import torchvision.transforms as T
 
 from torch.utils.data import Dataset
 
-from annotation import Annotation
-from utils import parse_annotation
+from utils import parse_annotation, to_tensor
 
 
 class RoadDamageDataset(Dataset):
@@ -26,50 +24,6 @@ class RoadDamageDataset(Dataset):
             annotation = parse_annotation(annotation_path)
             self.annotations[image_filename] = annotation
 
-    def class_to_label(self, class_name: str) -> int:
-        class_map = {
-            "D00": 1,  # Longitudinal crack
-            "D10": 2,  # Transverse crack
-            "D20": 3,  # Alligator crack
-            "D40": 4,  # Pothole
-        }
-        return class_map.get(class_name, 0)
-
-    def to_tensor(self, image, annotation: Annotation) -> tuple[torch.Tensor, dict]:
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        transform = T.Compose([T.ToPILImage(), T.ToTensor()])
-        image = transform(image)
-
-        if annotation is None:
-            return image, None
-
-        boxes = []
-        labels = []
-
-        if annotation.objects:
-            for o in annotation.objects:
-                boxes.append(
-                    [o.bndbox.xmin, o.bndbox.ymin, o.bndbox.xmax, o.bndbox.ymax]
-                )
-                labels.append(self.class_to_label(o.name))
-        boxes = (
-            torch.tensor(boxes, dtype=torch.float32)
-            if boxes
-            else torch.zeros((0, 4), dtype=torch.float32)
-        )
-        labels = (
-            torch.tensor(labels, dtype=torch.int64)
-            if labels
-            else torch.zeros((0,), dtype=torch.int64)
-        )
-
-        target = {
-            "boxes": boxes,
-            "labels": labels,
-        }
-
-        return image, target
-
     def __getitem__(self, index: int) -> tuple[torch.Tensor, dict]:
         image_filename = self.images[index]
         image_path = os.path.join(self.image_dir, image_filename)
@@ -77,9 +31,9 @@ class RoadDamageDataset(Dataset):
         image = cv2.imread(image_path)
 
         if self.annotation_dir is None:
-            return self.to_tensor(image, None)
+            return to_tensor(image, None)
 
-        return self.to_tensor(image, self.annotations[image_filename])
+        return to_tensor(image, self.annotations[image_filename])
 
     def __len__(self):
         return len(self.images)

@@ -1,3 +1,4 @@
+import os
 import cv2
 import xml.etree.ElementTree as ET
 
@@ -52,26 +53,44 @@ def parse_annotation(path: str) -> Annotation:
     return annotation
 
 
-def visualize_annotation(image_path: str, annotation: Annotation):
+def visualize_boxes(image_path: str, target: list, prediction: list):
     image = cv2.imread(image_path)
-    for o in annotation.objects:
+    for i, box in enumerate(target["boxes"]):
         cv2.rectangle(
             img=image,
-            pt1=(o.bndbox.xmin, o.bndbox.ymin),
-            pt2=(o.bndbox.xmax, o.bndbox.ymax),
+            pt1=(int(box[0]), int(box[1])),  # xmin, ymin
+            pt2=(int(box[2]), int(box[3])),  # xmax, ymax
             color=(0, 255, 0),
             thickness=2,
         )
         cv2.putText(
             img=image,
-            text=o.name,
-            org=(o.bndbox.xmin, o.bndbox.ymin - 5),
+            text=str(target["labels"][i].item()),
+            org=(int(box[0]), int(box[1]) - 5),
             color=(0, 255, 0),
             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
             fontScale=0.5,
             thickness=2,
         )
 
-    cv2.imshow(annotation.filename, image)
+    for i, box in enumerate(prediction[0]["boxes"]):
+        cv2.rectangle(
+            img=image,
+            pt1=(int(box[0]), int(box[1])),  # xmin, ymin
+            pt2=(int(box[2]), int(box[3])),  # xmax, ymax
+            color=(225, 0, 0),
+            thickness=2,
+        )
+        cv2.putText(
+            img=image,
+            text=str(prediction[0]["labels"][i].item()),
+            org=(int(box[0]), int(box[1]) - 5),
+            color=(255, 0, 0),
+            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+            fontScale=0.5,
+            thickness=2,
+        )
+
+    cv2.imshow(os.path.basename(image_path), image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()

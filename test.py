@@ -14,7 +14,7 @@ def test(model, test_data, device="cpu"):
         for i in tqdm(range(len(test_data)), desc="Testing Progress"):
             image, target = test_data[i]
             image = image.to(device)
-            prediction = model([image])
+            _, prediction = model([image])
             predictions.append(prediction)
 
             if target is not None:

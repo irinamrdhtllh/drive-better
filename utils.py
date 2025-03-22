@@ -129,7 +129,7 @@ def visualize_boxes(image_path: str, target: list, prediction: list):
             thickness=2,
         )
 
-    for i, box in enumerate(prediction[0]["boxes"]):
+    for i, box in enumerate(prediction["boxes"]):
         cv2.rectangle(
             img=image,
             pt1=(int(box[0]), int(box[1])),  # xmin, ymin
@@ -139,7 +139,7 @@ def visualize_boxes(image_path: str, target: list, prediction: list):
         )
         cv2.putText(
             img=image,
-            text=label_to_class(prediction[0]["labels"][i].item()),
+            text=label_to_class(prediction["labels"][i].item()),
             org=(int(box[0]), int(box[1]) - 5),
             color=(255, 0, 0),
             fontFace=cv2.FONT_HERSHEY_SIMPLEX,
@@ -150,7 +150,3 @@ def visualize_boxes(image_path: str, target: list, prediction: list):
     cv2.imshow(os.path.basename(image_path), image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
-
-# TODO: Add method to calculate metrics (F1-score, accuracy, etc.)
-def calculate_metrics(): ...

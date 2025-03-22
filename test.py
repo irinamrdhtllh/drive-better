@@ -15,7 +15,7 @@ def test(model, test_data, device="cpu"):
             image, target = test_data[i]
             image = image.to(device)
             _, prediction = model([image])
-            predictions.append(prediction)
+            predictions.append(prediction[0])
 
             if target is not None:
                 targets.append(target)

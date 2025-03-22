@@ -76,7 +76,16 @@ if __name__ == "__main__":
         model = Model(num_classes=5).to(device)
         predictions, targets = test(model, test_data, device)
 
-        # TODO: print metrics
+        # Average confidence score
+        total_score = 0
+        n_prediction = 0
+        for prediction in predictions:
+            for score in prediction["scores"]:
+                total_score += score
+                n_prediction += 1
+        avg_score = total_score / n_prediction
+
+        print(f"Avg confidence score: {avg_score:.4f}")
 
         if targets is not None:
             # Visualize ground truth and predictions

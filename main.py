@@ -12,7 +12,7 @@ from test import test
 from utils import visualize_boxes
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--mode",
@@ -31,7 +31,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_datasets(split: str = "train"):
+def load_datasets(split: str = "train") -> ConcatDataset:
     countries = ["czech", "india", "japan", "norway", "united_states"]
     datasets = [
         RoadDamageDataset(dir=f"./dataset/{country}", split=split)
@@ -87,8 +87,8 @@ if __name__ == "__main__":
 
         print(f"Avg confidence score: {avg_score:.4f}")
 
+        # Visualize ground truth and predictions
         if targets is not None:
-            # Visualize ground truth and predictions
             sample_data = test_data.datasets[5]
             image_filename = sample_data.images[1] if sample_data.images else None
             if image_filename:

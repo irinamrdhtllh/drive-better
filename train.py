@@ -2,19 +2,23 @@ import torch
 import torch.optim as optim
 
 from torch.utils.data import DataLoader
+from torch.optim import Optimizer, lr_scheduler
 from tqdm import tqdm
+from typing import Optional, Dict, List, Tuple, Union
 
 from utils import collate_fn
 
 
 def train(
-    model,
-    train_data,
-    val_data,
-    optimizer,
-    lr_scheduler=None,
-    num_epochs=100,
-    device="cpu",
+    model: torch.nn.Module,
+    train_data: List[Tuple[torch.Tensor, Dict[str, torch.Tensor]]],
+    val_data: List[Tuple[torch.Tensor, Dict[str, torch.Tensor]]],
+    optimizer: Optimizer,
+    lr_scheduler: Optional[
+        Union[lr_scheduler._LRScheduler, lr_scheduler.ReduceLROnPlateau]
+    ] = None,
+    num_epochs: int = 100,
+    device: str = "cpu",
 ):
     train_loader = DataLoader(
         train_data,

@@ -1,9 +1,14 @@
 import torch
 
 from tqdm import tqdm
+from typing import Optional, Dict, List, Tuple
 
 
-def test(model, test_data, device="cpu"):
+def test(
+    model: torch.nn.Module,
+    test_data: List[Tuple[torch.Tensor, Optional[Dict[str, torch.Tensor]]]],
+    device: str = "cpu",
+) -> Tuple[List[Dict[str, torch.Tensor]], Optional[List[Dict[str, torch.Tensor]]]]:
     model.load_state_dict(torch.load("./road_damage_detector.pth", map_location=device))
     model.to(device)
     model.eval()

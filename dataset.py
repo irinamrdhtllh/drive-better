@@ -3,6 +3,7 @@ import cv2
 import torch
 
 from torch.utils.data import Dataset
+from typing import Optional, Dict, Tuple
 
 from utils import parse_annotation, to_tensor
 
@@ -24,7 +25,9 @@ class RoadDamageDataset(Dataset):
             annotation = parse_annotation(annotation_path)
             self.annotations[image_filename] = annotation
 
-    def __getitem__(self, index: int) -> tuple[torch.Tensor, dict]:
+    def __getitem__(
+        self, index: int
+    ) -> Tuple[torch.Tensor, Optional[Dict[str, torch.Tensor]]]:
         image_filename = self.images[index]
         image_path = os.path.join(self.image_dir, image_filename)
 
@@ -35,5 +38,5 @@ class RoadDamageDataset(Dataset):
 
         return to_tensor(image, self.annotations[image_filename])
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.images)

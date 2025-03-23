@@ -4,6 +4,8 @@ import torch
 import torchvision.transforms as T
 import xml.etree.ElementTree as ET
 
+from typing import Optional, Dict, Tuple
+
 from annotation import Annotation, Size, BoundingBox, AnnotationObject
 
 
@@ -21,17 +23,17 @@ def class_to_label(class_name: str) -> int:
     return class_map.get(class_name, 0)
 
 
-def label_to_class(label: int) -> str:
+def label_to_class(label: int) -> Optional[str]:
     class_map = {
         1: "D00",
         2: "D10",
         3: "D20",
         4: "D40",
     }
-    return class_map.get(label, None)
+    return class_map.get(label)
 
 
-def parse_xml_node(root: ET.Element, node_name: str):
+def parse_xml_node(root: ET.Element, node_name: str) -> Optional[str]:
     element = root.find(node_name)
     if element:
         return element.text
@@ -75,7 +77,9 @@ def parse_annotation(path: str) -> Annotation:
     return annotation
 
 
-def to_tensor(image, annotation: Annotation) -> tuple[torch.Tensor, dict]:
+def to_tensor(
+    image, annotation: Optional[Annotation]
+) -> Tuple[torch.Tensor, Optional[Dict[str, torch.Tensor]]]:
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     transform = T.Compose([T.ToPILImage(), T.ToTensor()])
     image = transform(image)
@@ -109,43 +113,52 @@ def to_tensor(image, annotation: Annotation) -> tuple[torch.Tensor, dict]:
     return image, target
 
 
-def visualize_boxes(image_path: str, target: list, prediction: list):
-    image = cv2.imread(image_path)
-    for i, box in enumerate(target["boxes"]):
-        cv2.rectangle(
-            img=image,
-            pt1=(int(box[0]), int(box[1])),  # xmin, ymin
-            pt2=(int(box[2]), int(box[3])),  # xmax, ymax
-            color=(0, 255, 0),
-            thickness=2,
-        )
-        cv2.putText(
-            img=image,
-            text=label_to_class(target["labels"][i].item()),
-            org=(int(box[0]), int(box[1]) - 5),
-            color=(0, 255, 0),
-            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-            fontScale=0.5,
-            thickness=2,
-        )
+def visualize_boxes(
+    image_path: str,
+    target: Optional[Dict[str, torch.Tensor]] = None,
+    prediction: Optional[Dict[str, torch.Tensor]] = None,
+):
+    if target is None and prediction is None:
+        raise ValueError("At least one of 'target' or 'prediction' must not be None.")
 
-    for i, box in enumerate(prediction["boxes"]):
-        cv2.rectangle(
-            img=image,
-            pt1=(int(box[0]), int(box[1])),  # xmin, ymin
-            pt2=(int(box[2]), int(box[3])),  # xmax, ymax
-            color=(225, 0, 0),
-            thickness=2,
-        )
-        cv2.putText(
-            img=image,
-            text=label_to_class(prediction["labels"][i].item()),
-            org=(int(box[0]), int(box[1]) - 5),
-            color=(255, 0, 0),
-            fontFace=cv2.FONT_HERSHEY_SIMPLEX,
-            fontScale=0.5,
-            thickness=2,
-        )
+    image = cv2.imread(image_path)
+    if target is not None:
+        for i, box in enumerate(target["boxes"]):
+            cv2.rectangle(
+                img=image,
+                pt1=(int(box[0]), int(box[1])),  # xmin, ymin
+                pt2=(int(box[2]), int(box[3])),  # xmax, ymax
+                color=(0, 255, 0),
+                thickness=2,
+            )
+            cv2.putText(
+                img=image,
+                text=label_to_class(target["labels"][i].item()),
+                org=(int(box[0]), int(box[1]) - 5),
+                color=(0, 255, 0),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale=0.5,
+                thickness=2,
+            )
+
+    if prediction is not None:
+        for i, box in enumerate(prediction["boxes"]):
+            cv2.rectangle(
+                img=image,
+                pt1=(int(box[0]), int(box[1])),  # xmin, ymin
+                pt2=(int(box[2]), int(box[3])),  # xmax, ymax
+                color=(225, 0, 0),
+                thickness=2,
+            )
+            cv2.putText(
+                img=image,
+                text=label_to_class(prediction["labels"][i].item()),
+                org=(int(box[0]), int(box[1]) - 5),
+                color=(255, 0, 0),
+                fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                fontScale=0.5,
+                thickness=2,
+            )
 
     cv2.imshow(os.path.basename(image_path), image)
     cv2.waitKey(0)

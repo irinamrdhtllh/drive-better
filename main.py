@@ -52,11 +52,11 @@ if __name__ == "__main__":
         val_size = len(train_data) - train_size
         train_data, val_data = random_split(train_data, [train_size, val_size])
 
-        print("Dataset loaded successfully. Start training the model.")
+        print("Dataset loaded successfully. Starting to train the model.")
 
         model = Model(num_classes=5).to(device)
         params = [p for p in model.parameters() if p.requires_grad]
-        optimizer = optim.SGD(params, lr=0.005, momentum=0.9, weight_decay=0.0005)
+        optimizer = optim.SGD(params, lr=0.01, momentum=0.9, weight_decay=0.005)
         lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.9)
 
         train(
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     elif args.mode == "test":
         test_data = load_datasets(split="test")
 
-        print("Dataset loaded sucessfully. Start testing the model.")
+        print("Dataset loaded sucessfully. Starting to test the model.")
 
         model = Model(num_classes=5).to(device)
         predictions, targets = test(model, test_data, device)

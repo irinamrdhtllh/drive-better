@@ -81,7 +81,13 @@ def to_tensor(
     image, annotation: Optional[Annotation]
 ) -> Tuple[torch.Tensor, Optional[Dict[str, torch.Tensor]]]:
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    transform = T.Compose([T.ToPILImage(), T.ToTensor()])
+    transform = T.Compose(
+        [
+            T.ToPILImage(),
+            T.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.2, hue=0.1),
+            T.ToTensor(),
+        ]
+    )
     image = transform(image)
 
     if annotation is None:

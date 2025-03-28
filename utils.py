@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 
 from typing import Optional, Dict, Tuple
 
-from annotation import Annotation, Size, BoundingBox, AnnotationObject
+from datasets.annotation import Annotation, Size, BoundingBox, AnnotationObject
 
 
 def collate_fn(batch):

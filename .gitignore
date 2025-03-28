@@ -1,4 +1,4 @@
 .venv
-dataset
+images
 __pycache__
 *.pth

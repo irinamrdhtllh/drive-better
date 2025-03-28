@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from typing import Optional, Dict, List, Tuple
 
-from models.faster_rcnn import (
+from .faster_rcnn import (
     FasterRCNN_ResNet50_FPN_Weights,
     FastRCNNPredictor,
     fasterrcnn_resnet50_fpn,

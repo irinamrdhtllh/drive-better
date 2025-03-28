@@ -5,10 +5,10 @@ import torch.optim as optim
 
 from torch.utils.data import ConcatDataset, random_split
 
-from dataset import RoadDamageDataset
-from model import Model
-from train import train
-from test import test
+from datasets.dataset import RoadDamageDataset
+from models.model import Model
+from scripts.train import train
+from scripts.test import test
 from utils import visualize_boxes
 
 
@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
 def load_datasets(split: str = "train") -> ConcatDataset:
     countries = ["czech", "india", "japan", "norway", "united_states"]
     datasets = [
-        RoadDamageDataset(dir=f"./dataset/{country}", split=split)
+        RoadDamageDataset(dir=f"./datasets/images/{country}", split=split)
         for country in countries
     ]
     return ConcatDataset(datasets)
@@ -45,7 +45,8 @@ if __name__ == "__main__":
     device = torch.device(args.device)
 
     if args.mode == "train":
-        train_data = load_datasets(split="train")
+        # train_data = load_datasets(split="train")
+        train_data = RoadDamageDataset(dir="./datasets/images/dummy", split="train")
 
         # Split into training and validation sets (80-20 split)
         train_size = int(0.8 * len(train_data))

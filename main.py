@@ -78,12 +78,12 @@ if __name__ == "__main__":
 
         # Average confidence score
         total_score = 0
-        n_prediction = 0
+        num_predictions = 0
         for prediction in predictions:
             for score in prediction["scores"]:
                 total_score += score
-                n_prediction += 1
-        avg_score = total_score / n_prediction
+                num_predictions += 1
+        avg_score = total_score / num_predictions
 
         print(f"Avg confidence score: {avg_score:.4f}")
 

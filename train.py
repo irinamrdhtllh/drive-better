@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.optim as optim
 
@@ -37,8 +38,13 @@ def train(
     # Define the model
     model.to(device)
 
+    # Create checkpoints folder
+    os.makedirs("checkpoints", exist_ok=True)
+
     # Training loop
     best_val_loss = float("inf")
+    best_val_score = 0.0
+    best_epoch = 0
     for epoch in range(num_epochs):
         model.train()
         total_train_loss = 0
@@ -104,9 +110,13 @@ def train(
             f"Epoch: [{epoch + 1}/{num_epochs}], Train Loss: {(avg_train_loss):.4f}, Val Loss: {avg_val_loss:.4f}, Val Score: {avg_val_score:.4f}"
         )
 
+        torch.save(model.state_dict(), f"./checkpoints/epoch_{epoch+1}.pth")
+
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
-            torch.save(model.state_dict(), f"road_damage_detector.pth")
-            print(
-                f"Model saved at epoch {epoch + 1} (best validation loss: {best_val_loss:.4f})."
-            )
+            best_val_score = avg_val_score
+            best_epoch = epoch + 1
+
+    print(
+        f"Training complete. Best val loss: {best_val_loss:.4f} at epoch {best_epoch} with score: {best_val_score:.4f}."
+    )

@@ -45,8 +45,7 @@ if __name__ == "__main__":
     device = torch.device(args.device)
 
     if args.mode == "train":
-        # train_data = load_datasets(split="train")
-        train_data = RoadDamageDataset(dir="./datasets/images/dummy", split="train")
+        train_data = load_datasets(split="train")
 
         # Split into training and validation sets (80-20 split)
         train_size = int(0.8 * len(train_data))

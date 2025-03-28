@@ -67,6 +67,8 @@ def train(
         # Validate the model
         model.eval()
         total_val_loss = 0
+        total_val_score = 0
+        num_predictions = 0
 
         val_bar = tqdm(
             val_loader, desc=f"Epoch {epoch + 1}/{num_epochs} [Validation]", leave=False
@@ -77,12 +79,20 @@ def train(
                 images = [i.to(device) for i in images]
                 targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
 
-                losses, _ = model(images, targets)
+                losses, predictions = model(images, targets)
                 val_loss = sum(l for l in losses.values())
-
                 total_val_loss += val_loss.item()
 
+                for prediction in predictions:
+                    for score in prediction["scores"]:
+                        total_val_score += score
+                        num_predictions += 1
+
         avg_val_loss = total_val_loss / len(val_loader)
+
+        avg_val_score = (
+            total_val_score / num_predictions if num_predictions > 0 else 0.0
+        )
 
         if lr_scheduler:
             if isinstance(lr_scheduler, optim.lr_scheduler.ReduceLROnPlateau):
@@ -91,7 +101,7 @@ def train(
                 lr_scheduler.step()
 
         print(
-            f"Epoch: [{epoch + 1}/{num_epochs}], Train Loss: {(avg_train_loss):.4f}, Val Loss: {avg_val_loss:.4f}"
+            f"Epoch: [{epoch + 1}/{num_epochs}], Train Loss: {(avg_train_loss):.4f}, Val Loss: {avg_val_loss:.4f}, Val Score: {avg_val_score:.4f}"
         )
 
         if avg_val_loss < best_val_loss:

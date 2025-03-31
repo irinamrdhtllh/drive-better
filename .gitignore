@@ -1,4 +1,7 @@
 .venv
-images
 __pycache__
 *.pth
+*.pt
+
+dataset
+runs

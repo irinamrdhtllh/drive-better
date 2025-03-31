@@ -1,7 +1,7 @@
-import toml
+import yaml
 from typing_extensions import TypedDict
 
-CONFIG_FILE = "./carla_env/config.toml"
+CONFIG_FILE = "./carla_env/config.yaml"
 
 
 class Config(TypedDict): ...
@@ -9,5 +9,5 @@ class Config(TypedDict): ...
 
 def read_config() -> Config:
     with open(CONFIG_FILE, "r") as f:
-        config = toml.loads(f.read())
+        config = yaml.safe_load(f)
     return config

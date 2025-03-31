@@ -1,0 +1,10 @@
+host: "localhost"
+timeout: 30.0
+timestep: 0.05
+retries_on_error: 30
+res_x: 512
+res_y: 512
+quality_level: "Epic"
+enable_map_assets: true
+enable_rendering: true
+show_display: true

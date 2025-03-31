@@ -1,0 +1,5 @@
+path: "D:/Documents/road-damage-detection/datasets"
+train: "dataset/united_states/train/images"
+val: "dataset/united_states/val/images"
+nc: 5
+names: [Null, "D00", "D10", "D20", "D40"]

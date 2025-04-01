@@ -77,6 +77,46 @@ def parse_annotation(path: str) -> Annotation:
     return annotation
 
 
+def xml_to_yolotxt(dir):
+    xmls_dir = os.path.join(dir, "annotations/xmls/")
+    labels_dir = os.path.join(dir, "labels/")
+    os.makedirs(labels_dir)
+
+    for xml_file in os.listdir(xmls_dir):
+        if not xml_file.endswith(".xml"):
+            continue
+
+        labels = []
+
+        annotation = parse_annotation(os.path.join(xmls_dir, xml_file))
+
+        image_width = annotation.size.width
+        image_height = annotation.size.height
+
+        # TODO: handle annotation file that has no objects
+
+        for o in annotation.objects:
+            name = o.name
+
+            xmin = o.bndbox.xmin
+            ymin = o.bndbox.ymin
+            xmax = o.bndbox.xmax
+            ymax = o.bndbox.ymax
+
+            x_center = (xmin + xmax) / (2 * image_width)
+            y_center = (ymin + ymax) / (2 * image_height)
+            box_width = (xmax - xmin) / image_width
+            box_height = (ymax - ymin) / image_height
+
+            labels.append(f"{name} {x_center} {y_center} {box_width} {box_height}")
+
+        txt_filename = os.path.join(labels_dir, xml_file.replace(".xml", ".txt"))
+        with open(txt_filename, "w") as f:
+            f.write("\n".join(labels))
+
+    print("Successfully converted XML annotation files into YOLO format.")
+
+
 def to_tensor(
     image, annotation: Optional[Annotation]
 ) -> Tuple[torch.Tensor, Optional[Dict[str, torch.Tensor]]]:
@@ -169,3 +209,7 @@ def visualize_boxes(
     cv2.imshow(os.path.basename(image_path), image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    xml_to_yolotxt(dir="./datasets/dataset/sample/train/")

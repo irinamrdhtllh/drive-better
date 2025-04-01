@@ -1,4 +1,6 @@
 import os
+import random
+import shutil
 import cv2
 import torch
 import torchvision.transforms as T
@@ -31,6 +33,38 @@ def label_to_class(label: int) -> Optional[str]:
         4: "D40",
     }
     return class_map.get(label)
+
+
+def train_val_split(dir: str, val_ratio: int = 0.2):
+    countries = ["czech", "india", "japan", "norway", "united_states"]
+    for country in countries:
+        train_images_dir = os.path.join(dir, country, "train/images")
+        train_annotations_dir = os.path.join(dir, country, "train/annotations/xmls")
+        val_images_dir = os.path.join(dir, country, "val/images")
+        val_annotations_dir = os.path.join(dir, country, "val/annotations/xmls")
+
+        os.makedirs(val_images_dir, exist_ok=True)
+        os.makedirs(val_annotations_dir, exist_ok=True)
+
+        images = [file for file in os.listdir(train_images_dir)]
+        num_val_images = int(len(images) * val_ratio)
+        val_images = random.sample(images, num_val_images)
+
+        for image in val_images:
+            image_path = os.path.join(train_images_dir, image)
+            annotation_path = os.path.join(
+                train_annotations_dir, image.replace(".jpg", ".xml")
+            )
+            shutil.move(
+                image_path,
+                os.path.join(val_images_dir, image),
+            )
+            shutil.move(
+                annotation_path,
+                os.path.join(val_annotations_dir, os.path.basename(annotation_path)),
+            )
+
+    print("Dataset train-val split completed.")
 
 
 def parse_xml_node(root: ET.Element, node_name: str) -> Optional[str]:
@@ -77,7 +111,7 @@ def parse_annotation(path: str) -> Annotation:
     return annotation
 
 
-def xml_to_yolotxt(dir):
+def xml_to_yolotxt(dir: str):
     xmls_dir = os.path.join(dir, "annotations/xmls/")
     labels_dir = os.path.join(dir, "labels/")
     os.makedirs(labels_dir)
@@ -92,8 +126,6 @@ def xml_to_yolotxt(dir):
 
         image_width = annotation.size.width
         image_height = annotation.size.height
-
-        # TODO: handle annotation file that has no objects
 
         for o in annotation.objects:
             name = o.name
@@ -212,4 +244,4 @@ def visualize_boxes(
 
 
 if __name__ == "__main__":
-    xml_to_yolotxt(dir="./datasets/dataset/sample/train/")
+    train_val_split(dir="./datasets/dataset", val_ratio=0.2)

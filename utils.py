@@ -36,35 +36,31 @@ def label_to_class(label: int) -> Optional[str]:
 
 
 def train_val_split(dir: str, val_ratio: int = 0.2):
-    countries = ["czech", "india", "japan", "norway", "united_states"]
-    for country in countries:
-        train_images_dir = os.path.join(dir, country, "train/images")
-        train_annotations_dir = os.path.join(dir, country, "train/annotations/xmls")
-        val_images_dir = os.path.join(dir, country, "val/images")
-        val_annotations_dir = os.path.join(dir, country, "val/annotations/xmls")
+    train_images_dir = os.path.join(dir, "train/images")
+    train_annotations_dir = os.path.join(dir, "train/annotations/xmls")
+    val_images_dir = os.path.join(dir, "val/images")
+    val_annotations_dir = os.path.join(dir, "val/annotations/xmls")
 
-        os.makedirs(val_images_dir, exist_ok=True)
-        os.makedirs(val_annotations_dir, exist_ok=True)
+    os.makedirs(val_images_dir)
+    os.makedirs(val_annotations_dir)
 
-        images = [file for file in os.listdir(train_images_dir)]
-        num_val_images = int(len(images) * val_ratio)
-        val_images = random.sample(images, num_val_images)
+    images = [file for file in os.listdir(train_images_dir)]
+    num_val_images = int(len(images) * val_ratio)
+    val_images = random.sample(images, num_val_images)
 
-        for image in val_images:
-            image_path = os.path.join(train_images_dir, image)
-            annotation_path = os.path.join(
-                train_annotations_dir, image.replace(".jpg", ".xml")
-            )
-            shutil.move(
-                image_path,
-                os.path.join(val_images_dir, image),
-            )
-            shutil.move(
-                annotation_path,
-                os.path.join(val_annotations_dir, os.path.basename(annotation_path)),
-            )
-
-    print("Dataset train-val split completed.")
+    for image in val_images:
+        image_path = os.path.join(train_images_dir, image)
+        annotation_path = os.path.join(
+            train_annotations_dir, image.replace(".jpg", ".xml")
+        )
+        shutil.move(
+            image_path,
+            os.path.join(val_images_dir, image),
+        )
+        shutil.move(
+            annotation_path,
+            os.path.join(val_annotations_dir, os.path.basename(annotation_path)),
+        )
 
 
 def parse_xml_node(root: ET.Element, node_name: str) -> Optional[str]:
@@ -114,7 +110,7 @@ def parse_annotation(path: str) -> Annotation:
 def xml_to_yolotxt(dir: str):
     xmls_dir = os.path.join(dir, "annotations/xmls/")
     labels_dir = os.path.join(dir, "labels/")
-    os.makedirs(labels_dir)
+    os.makedirs(labels_dir, exist_ok=True)
 
     for xml_file in os.listdir(xmls_dir):
         if not xml_file.endswith(".xml"):
@@ -145,8 +141,6 @@ def xml_to_yolotxt(dir: str):
         txt_filename = os.path.join(labels_dir, xml_file.replace(".xml", ".txt"))
         with open(txt_filename, "w") as f:
             f.write("\n".join(labels))
-
-    print("Successfully converted XML annotation files into YOLO format.")
 
 
 def to_tensor(
@@ -241,7 +235,3 @@ def visualize_boxes(
     cv2.imshow(os.path.basename(image_path), image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-
-
-if __name__ == "__main__":
-    train_val_split(dir="./datasets/dataset", val_ratio=0.2)

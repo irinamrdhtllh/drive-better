@@ -1,5 +1,19 @@
-path: "D:/Documents/road-damage-detection/datasets"
-train: "dataset/united_states/train/images"
-val: "dataset/united_states/val/images"
-nc: 5
-names: [Null, "D00", "D10", "D20", "D40"]
+path: D:/Documents/road-damage-detection/datasets
+train: 
+  - dataset/czech/train/images
+  - dataset/india/train/images
+  - dataset/japan/train/images
+  - dataset/norway/train/images
+  - dataset/united_states/train/images
+val:
+  - dataset/czech/val/images
+  - dataset/india/val/images
+  - dataset/japan/val/images
+  - dataset/norway/val/images
+  - dataset/united_states/val/images
+nc: 4
+names:
+  - "D00"
+  - "D10"
+  - "D20"
+  - "D40"

@@ -10,11 +10,13 @@ from utils import parse_annotation, to_tensor
 
 class RoadDamageDataset(Dataset):
     def __init__(self, dir: str, split: str = "train"):
-        assert split in ["train", "test"]
+        assert split in ["train", "val", "test"]
         self.dir = dir
         self.image_dir = os.path.join(dir, split, "images")
         self.annotation_dir = (
-            os.path.join(dir, split, "annotations/xmls") if split == "train" else None
+            os.path.join(dir, split, "annotations/xmls")
+            if split == "train" or split == "val"
+            else None
         )
         self.images = os.listdir(self.image_dir)
         self.annotations = {}

@@ -133,8 +133,8 @@ def xml_to_yolotxt(dir: str):
             xmax = o.bndbox.xmax
             ymax = o.bndbox.ymax
 
-            x_center = (xmin + xmax) / (2 * image_width)
-            y_center = (ymin + ymax) / (2 * image_height)
+            x_center = (xmin + (xmax - xmin) / 2) / image_width
+            y_center = (ymin + (ymax - ymin) / 2) / image_height
             box_width = (xmax - xmin) / image_width
             box_height = (ymax - ymin) / image_height
 

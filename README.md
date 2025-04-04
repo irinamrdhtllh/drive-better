@@ -1,1 +1,3 @@
-# Road Damage Detection for Autonomous Vehicles
+# DriveBetter: A Road Damage Detector for Autonomous Vehicles
+
+DriveBetter is an ongoing project focused on designing a road damage detection system for autonomous vehicles. It integrates multi-sensor fusion to improve navigation in challenging environments (e.g., nighttime, foggy conditions), ensuring autonomous vehicles can drive smoothly and safely at all times. The system is tested and simulated in CARLA, an open-source autonomous driving simulator.

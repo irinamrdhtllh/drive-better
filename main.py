@@ -31,42 +31,40 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def split_datasets():
-    dataset_dir = "./datasets/dataset"
+def prepare_datasets(dataset_dir: str):
     countries = ["czech", "india", "japan", "norway", "united_states"]
 
-    split = False
+    split_done = False
+    conversion_done = False
 
     for country in countries:
         val_dir = os.path.join(dataset_dir, country, "val")
         if not os.path.exists(val_dir):
-            train_val_split(dir=f"./datasets/dataset/{country}", val_ratio=0.2)
-            split = True
+            train_val_split(dir=os.path.join(dataset_dir, country), val_ratio=0.2)
+            split_done = True
 
-    if split:
+        for split in ["train", "val"]:
+            labels_dir = os.path.join(dataset_dir, country, split, "labels")
+            if not os.path.exists(labels_dir):
+                xml_to_yolotxt(dir=os.path.join(dataset_dir, country, split))
+                conversion_done = True
+
+    if split_done:
         print("Dataset train-val split completed.")
     else:
         print("Validation data already exists.")
 
+    if conversion_done:
+        print(f"Successfully converted XML annotation files into YOLO format.")
+    else:
+        print(f"Labels of data already exists.")
 
-def load_datasets(split: str = "train") -> ConcatDataset:
+
+def load_datasets(dataset_dir: str, split: str = "train") -> ConcatDataset:
     countries = ["czech", "india", "japan", "norway", "united_states"]
 
-    convert = False
-
-    for country in countries:
-        labels_dir = f"./datasets/dataset/{country}/{split}/labels"
-        if not os.path.exists(labels_dir):
-            xml_to_yolotxt(dir=f"./datasets/dataset/{country}/{split}")
-            convert = True
-
-    if convert:
-        print(f"Successfully converted {split} XML annotation files into YOLO format.")
-    else:
-        print(f"Labels of {split} data already exists.")
-
     datasets = [
-        RoadDamageDataset(dir=f"./datasets/dataset/{country}", split=split)
+        RoadDamageDataset(dir=os.path.join(dataset_dir, country), split=split)
         for country in countries
     ]
     return ConcatDataset(datasets)
@@ -75,14 +73,15 @@ def load_datasets(split: str = "train") -> ConcatDataset:
 if __name__ == "__main__":
     args = parse_args()
     device = torch.device(args.device)
+    dataset_dir = "./datasets/dataset"
 
     if args.mode == "train":
-        # Split into training and validation sets (80-20 split)
-        split_datasets()
+        # Prepare the train and val datasets
+        prepare_datasets(dataset_dir)
 
         # Load the datasets
-        train_data = load_datasets(split="train")
-        val_data = load_datasets(split="val")
+        train_data = load_datasets(dataset_dir, split="train")
+        val_data = load_datasets(dataset_dir, split="val")
         print("Dataset loaded successfully. Starting to train the model.")
 
         # Define the model
@@ -103,7 +102,7 @@ if __name__ == "__main__":
             device=device,
         )
     elif args.mode == "test":
-        test_data = load_datasets(split="test")
+        test_data = load_datasets(dataset_dir, split="test")
 
         print("Dataset loaded sucessfully. Starting to test the model.")
 

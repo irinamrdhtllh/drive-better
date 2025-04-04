@@ -17,20 +17,20 @@ def collate_fn(batch):
 
 def class_to_label(class_name: str) -> int:
     class_map = {
-        "D00": 1,  # Longitudinal crack
-        "D10": 2,  # Transverse crack
-        "D20": 3,  # Alligator crack
-        "D40": 4,  # Pothole
+        "D00": 0,  # Longitudinal crack
+        "D10": 1,  # Transverse crack
+        "D20": 2,  # Alligator crack
+        "D40": 3,  # Pothole
     }
-    return class_map.get(class_name, 0)
+    return class_map.get(class_name, 4)
 
 
 def label_to_class(label: int) -> Optional[str]:
     class_map = {
-        1: "D00",
-        2: "D10",
-        3: "D20",
-        4: "D40",
+        0: "D00",
+        1: "D10",
+        2: "D20",
+        3: "D40",
     }
     return class_map.get(label)
 
@@ -124,7 +124,7 @@ def xml_to_yolotxt(dir: str):
         image_height = annotation.size.height
 
         for o in annotation.objects:
-            name = o.name
+            name = class_to_label(o.name)
 
             xmin = o.bndbox.xmin
             ymin = o.bndbox.ymin

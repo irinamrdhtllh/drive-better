@@ -9,7 +9,7 @@ from datasets.dataset import RoadDamageDataset
 from models.model import FasterRCNN_ResNet50, YOLO11
 from scripts.train import train
 from scripts.test import test
-from utils import visualize_boxes
+from utils import train_val_split, xml_to_yolotxt, visualize_boxes
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,8 +31,40 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def split_datasets():
+    dataset_dir = "./datasets/dataset"
+    countries = ["czech", "india", "japan", "norway", "united_states"]
+
+    split = False
+
+    for country in countries:
+        val_dir = os.path.join(dataset_dir, country, "val")
+        if not os.path.exists(val_dir):
+            train_val_split(dir=f"./datasets/dataset/{country}", val_ratio=0.2)
+            split = True
+
+    if split:
+        print("Dataset train-val split completed.")
+    else:
+        print("Validation data already exists.")
+
+
 def load_datasets(split: str = "train") -> ConcatDataset:
     countries = ["czech", "india", "japan", "norway", "united_states"]
+
+    convert = False
+
+    for country in countries:
+        labels_dir = f"./datasets/dataset/{country}/{split}/labels"
+        if not os.path.exists(labels_dir):
+            xml_to_yolotxt(dir=f"./datasets/dataset/{country}/{split}")
+            convert = True
+
+    if convert:
+        print(f"Successfully converted {split} XML annotation files into YOLO format.")
+    else:
+        print(f"Labels of {split} data already exists.")
+
     datasets = [
         RoadDamageDataset(dir=f"./datasets/dataset/{country}", split=split)
         for country in countries
@@ -45,15 +77,15 @@ if __name__ == "__main__":
     device = torch.device(args.device)
 
     if args.mode == "train":
-        train_data = load_datasets(split="train")
-
         # Split into training and validation sets (80-20 split)
-        train_size = int(0.8 * len(train_data))
-        val_size = len(train_data) - train_size
-        train_data, val_data = random_split(train_data, [train_size, val_size])
+        split_datasets()
 
+        # Load the datasets
+        train_data = load_datasets(split="train")
+        val_data = load_datasets(split="val")
         print("Dataset loaded successfully. Starting to train the model.")
 
+        # Define the model
         # model = FasterRCNN_ResNet50().to(device)
         # params = [p for p in model.parameters() if p.requires_grad]
         # optimizer = optim.SGD(params, lr=0.01, momentum=0.9, weight_decay=0.005)

@@ -87,6 +87,8 @@ def parse_annotation(path: str) -> Annotation:
     objects = []
     for o in root.findall("object"):
         name = o.find("name").text
+        if name not in ["D00", "D10", "D20", "D40"]:
+            continue
         pose = parse_xml_node(root, "pose")
         truncated = False if parse_xml_node(root, "truncated") == "0" else True
         difficult = False if parse_xml_node(root, "difficult") == "0" else True

@@ -10,7 +10,8 @@ from config import read_config
 
 class InitEnv:
     def __init__(self, config):
-        self.config = config
+        self.carla_config = config["carla"]
+        self.exp_config = config["experiment"]
 
         self.client = None
         self.world = None
@@ -40,13 +41,13 @@ class InitEnv:
             uses_server_port = is_used(self.server_port)
             uses_stream_port = is_used(self.server_port + 1)
 
-        if self.config["show_display"]:
+        if self.carla_config["show_display"]:
             server_command = [
                 "D:/Documents/CARLA_0.9.15/CarlaUE4.exe",
                 "-windowed",
-                "-ResX={}".format(self.config["res_x"]),
-                "-ResY={}".format(self.config["res_y"]),
-                "-quality-level={}".format(self.config["quality_level"]),
+                "-ResX={}".format(self.carla_config["res_x"]),
+                "-ResY={}".format(self.carla_config["res_y"]),
+                "-quality-level={}".format(self.carla_config["quality_level"]),
             ]
         else:
             server_command = [
@@ -68,17 +69,17 @@ class InitEnv:
         )
 
     def connect_client(self):
-        max_retries = self.config["retries_on_error"]
+        max_retries = self.carla_config["retries_on_error"]
         for i in range(max_retries):
             try:
-                self.client = carla.Client(self.config["host"], self.server_port)
-                self.client.set_timeout(self.config["timeout"])
+                self.client = carla.Client(self.carla_config["host"], self.server_port)
+                self.client.set_timeout(self.carla_config["timeout"])
                 self.world = self.client.get_world()
 
                 settings = self.world.get_settings()
-                settings.no_rendering_mode = not self.config["enable_rendering"]
+                settings.no_rendering_mode = not self.carla_config["enable_rendering"]
                 settings.synchronous_mode = False
-                settings.fixed_delta_seconds = self.config["timestep"]
+                settings.fixed_delta_seconds = self.carla_config["timestep"]
                 self.world.apply_settings(settings)
                 self.world.tick()
 
@@ -93,7 +94,44 @@ class InitEnv:
             "Cannot connect to server. Try increasing 'timeout' or 'retries_on_error' at the carla configuration."
         )
 
+    def setup_experiment(self):
+        self.world = self.client.get_world()
+        self.map = self.world.get_map()
+
+        weather = getattr(carla.WeatherParameters, self.exp_config["weather"])
+        self.world.set_weather(weather)
+
+        self.tm_port = 8000
+        while is_used(self.tm_port):
+            print(
+                f"Traffic manager's port {self.tm_port} is already being used. Checking the next one."
+            )
+            self.tm_port += 1
+        print(f"Traffic manager connected to port {self.tm_port}.")
+
+        self.traffic_manager = self.client.get_trafficmanager(self.tm_port)
+        self.traffic_manager.set_hybrid_physics_mode(self.exp_config["tm_hybrid_mode"])
+
+        seed = self.exp_config["seed"]
+        if seed is not None:
+            self.traffic_manager.set_random_device_seed(seed)
+
+    def reset_hero(self): ...
+
+    def spectator_camera_view(self): ...
+
+    def get_sensor_data(self): ...
+
+    def control_hero(self): ...
+
+    def generate_traffic(self): ...
+
+    def tick(self): ...
+
+    def destroy(self): ...
+
 
 if __name__ == "__main__":
     config = read_config()
     env = InitEnv(config)
+    env.setup_experiment()

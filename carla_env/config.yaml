@@ -11,6 +11,18 @@ carla:
 
 experiment:
   town: "Town10HD_Opt"
+  hero_model: "vehicle.dodge.charger_2020"
+  sensors: 
+    camera:
+      type: "sensor.camera.rgb"
+      width: 800
+      height: 600
+      fov: 90
+      transform: "0.5,0,1.65,0,-10,0"
+    lidar:
+      type: "sensor.lidar.ray_cast"
+      range: 20
   weather: "ClearNoon"
   tm_hybrid_mode: false
   seed: true
+

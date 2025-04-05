@@ -116,7 +116,28 @@ class InitEnv:
         if seed is not None:
             self.traffic_manager.set_random_device_seed(seed)
 
-    def reset_hero(self): ...
+    def reset_hero(self):
+        if self.hero is not None:
+            self.hero.destroy()
+            self.hero = None
+
+        self.world.tick()
+
+        hero_model = "".join(self.exp_config["hero_model"])
+        hero_blueprint = self.world.get_blueprint_library().find(hero_model)
+        hero_blueprint.set_attribute("role_name", "hero")
+
+        spawn_points = self.map.get_spawn_points()
+        spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
+
+        self.hero = self.world.spawn_actor(hero_blueprint, spawn_point)
+        if self.hero is None:
+            raise AssertionError(
+                f"Error spawning her {hero_blueprint} at point {spawn_point}."
+            )
+        self.world.tick()
+
+        # TODO: Add sensors (camera, LiDAR, etc) to hero
 
     def spectator_camera_view(self): ...
 
@@ -135,3 +156,4 @@ if __name__ == "__main__":
     config = read_config()
     env = InitEnv(config)
     env.setup_experiment()
+    env.reset_hero()

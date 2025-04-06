@@ -15,10 +15,10 @@ experiment:
   sensors: 
     camera:
       type: "sensor.camera.rgb"
-      width: 800
-      height: 600
+      image_size_x: 800
+      image_size_y: 600
       fov: 90
-      transform: "0.5,0,1.65,0,-10,0"
+      transform: "0.5, 0, 1.65, 0, -10, 0"
     lidar:
       type: "sensor.lidar.ray_cast"
       range: 20

@@ -3,9 +3,12 @@ import random
 import subprocess
 import time
 import carla
+import cv2
 
 from helper import is_used
 from config import read_config
+from sensors.sensor_factory import SensorFactory
+from sensors.sensor_interface import SensorInterface
 
 
 class InitEnv:
@@ -19,6 +22,7 @@ class InitEnv:
         self.traffic_manager = None
 
         self.hero = None
+        self.sensor_interface = SensorInterface()
         self.spawn_point = None
         self.goal_point = None
 
@@ -120,6 +124,8 @@ class InitEnv:
         if self.hero is not None:
             self.hero.destroy()
             self.hero = None
+            self.sensor_interface.destroy()
+            cv2.destroyAllWindows()
 
         self.world.tick()
 
@@ -135,9 +141,24 @@ class InitEnv:
             raise AssertionError(
                 f"Error spawning her {hero_blueprint} at point {spawn_point}."
             )
+
         self.world.tick()
 
-        # TODO: Add sensors (camera, LiDAR, etc) to hero
+        hero_sensors = self.exp_config["sensors"]
+
+        if self.hero is not None:
+            print("Hero spawned.")
+            for name, attributes in hero_sensors.items():
+                sensor = SensorFactory.spawn(
+                    name, attributes, self.sensor_interface, self.hero
+                )
+
+        sensor_data = self.sensor_interface.get_data()
+        image = sensor_data["camera"][1]
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        cv2.imshow("Camera Image", image)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
 
     def spectator_camera_view(self): ...
 

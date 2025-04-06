@@ -153,16 +153,30 @@ class InitEnv:
                     name, attributes, self.sensor_interface, self.hero
                 )
 
+    def set_spectator_view(self):
+        transform = self.hero.get_transform()
+
+        # The camera position
+        view_x = transform.location.x - 8 * transform.get_forward_vector().x
+        view_y = transform.location.y - 5 * transform.get_forward_vector().y
+        view_z = transform.location.z + 3
+
+        # The camera orientation
+        view_roll = transform.rotation.roll
+        view_yaw = transform.rotation.yaw
+        view_pitch = transform.rotation.pitch
+
+        self.spectator = self.world.get_spectator()
+        self.spectator.set_transform(
+            carla.Transform(
+                carla.Location(x=view_x, y=view_y, z=view_z),
+                carla.Rotation(pitch=view_pitch, yaw=view_yaw, roll=view_roll),
+            )
+        )
+
+    def get_sensor_data(self):
         sensor_data = self.sensor_interface.get_data()
-        image = sensor_data["camera"][1]
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        cv2.imshow("Camera Image", image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
-    def spectator_camera_view(self): ...
-
-    def get_sensor_data(self): ...
+        return sensor_data
 
     def control_hero(self): ...
 
@@ -178,3 +192,4 @@ if __name__ == "__main__":
     env = InitEnv(config)
     env.setup_experiment()
     env.reset_hero()
+    env.set_spectator_view()

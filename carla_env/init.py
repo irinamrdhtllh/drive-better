@@ -29,6 +29,7 @@ class InitEnv:
 
         self.vehicles_list = []
         self.walkers_list = []
+        self.all_walkers = []
         self.all_walkers_id = []
 
         self.init_server()
@@ -312,7 +313,28 @@ class InitEnv:
 
     def tick(self, control): ...
 
-    def destroy(self): ...
+    def destroy(self):
+        if len(self.vehicles_list) > 0:
+            # Destroy all vehicles
+            print(f"Destroying {len(env.vehicles_list)} vehicles")
+            env.client.apply_batch(
+                [carla.command.DestroyActor(x) for x in env.vehicles_list]
+            )
+            self.vehicles_list = []
+
+        if len(self.walkers_list) > 0:
+            # Stop walkers' controller
+            for i in range(0, len(env.all_walkers), 2):
+                env.all_walkers[i].stop()
+
+            # Destroy all walkers
+            print(f"Destroying {len(env.walkers_list)} walkers")
+            env.client.apply_batch(
+                [carla.command.DestroyActor(x) for x in env.all_walkers_id]
+            )
+            self.walkers_list = []
+            self.all_walkers = []
+            self.all_walkers_id = []
 
 
 if __name__ == "__main__":
@@ -330,24 +352,8 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         settings = env.world.get_settings()
         settings.synchronous_mode = False
-        settings.no_rendering_mode = False
-        settings.fixed_delta_seconds = None
         env.world.apply_settings(settings)
 
-        # Destroy all vehicles
-        print(f"Destroying {len(env.vehicles_list)} vehicles")
-        env.client.apply_batch(
-            [carla.command.DestroyActor(x) for x in env.vehicles_list]
-        )
-
-        # Stop walkers' controller
-        for i in range(0, len(env.all_walkers), 2):
-            env.all_walkers[i].stop()
-
-        # Destroy all walkers
-        print(f"Destroying {len(env.walkers_list)} walkers")
-        env.client.apply_batch(
-            [carla.command.DestroyActor(x) for x in env.all_walkers_id]
-        )
+        env.destroy()
 
         time.sleep(0.5)

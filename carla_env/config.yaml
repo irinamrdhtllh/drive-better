@@ -11,6 +11,7 @@ carla:
 
 experiment:
   town: "Town10HD_Opt"
+  weather: "ClearNoon"
   hero_model: "vehicle.dodge.charger_2020"
   sensors: 
     camera:
@@ -22,7 +23,8 @@ experiment:
     lidar:
       type: "sensor.lidar.ray_cast"
       range: 20
-  weather: "ClearNoon"
+  num_vehicles: 50
+  num_walkers: 20
   tm_hybrid_mode: false
   seed: true
 

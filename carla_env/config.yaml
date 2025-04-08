@@ -6,22 +6,26 @@ carla:
   res_x: 1280
   res_y: 720
   quality_level: "Epic"
+  synchronous_mode: true
   enable_rendering: true
   show_display: true
 
 experiment:
   town: "Town10HD_Opt"
   weather: "ClearNoon"
-  hero_model: "vehicle.dodge.charger_2020"
+  hero_model: "vehicle.lincoln.mkz_2020"
   sensors: 
     camera:
       type: "sensor.camera.rgb"
       image_size_x: 800
       image_size_y: 600
       fov: 90
-      transform: "0.5, 0, 1.65, 0, -10, 0"
+      transform: "1, 0, 1.5, 0, 0, 0"
     lidar:
       type: "sensor.lidar.ray_cast"
+      range: 20
+    radar:
+      type: "sensor.other.radar"
       range: 20
   num_vehicles: 50
   num_walkers: 20

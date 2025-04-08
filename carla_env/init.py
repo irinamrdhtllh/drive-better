@@ -87,7 +87,7 @@ class InitEnv:
                 self.world = self.client.get_world()
                 settings = self.world.get_settings()
                 settings.no_rendering_mode = not self.carla_config["enable_rendering"]
-                settings.synchronous_mode = True
+                settings.synchronous_mode = self.carla_config["synchronous_mode"]
                 settings.fixed_delta_seconds = self.carla_config["timestep"]
                 self.world.apply_settings(settings)
                 self.world.tick()
@@ -180,9 +180,21 @@ class InitEnv:
 
     def get_sensor_data(self):
         sensor_data = self.sensor_interface.get_data()
+
+        # Check the image taken by the camera
+        # image = sensor_data["camera"][1]
+        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        # cv2.imshow("Front Camera", image)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
+
+        # Check LiDAR data
+        # lidar = sensor_data["lidar"][1]
+        # print(lidar)
+
         return sensor_data
 
-    def control_hero(self): ...
+    def apply_control_hero(self): ...
 
     def generate_traffic(self):
         vehicle_blueprints = self.world.get_blueprint_library().filter("vehicle.*")
@@ -311,7 +323,18 @@ class InitEnv:
             f"spawned {len(self.vehicles_list)} vehicles and {len(self.walkers_list)} walkers."
         )
 
-    def tick(self, control): ...
+    def tick(self, control):
+        if control is None:
+            pass
+        else:
+            self.apply_control_hero(control)
+
+        self.world.tick()
+
+        if self.carla_config["enable_rendering"]:
+            self.set_spectator_view()
+
+        return self.get_sensor_data()
 
     def destroy(self):
         if len(self.vehicles_list) > 0:
@@ -343,11 +366,10 @@ if __name__ == "__main__":
     env.setup_experiment()
     env.reset_hero()
     env.generate_traffic()
-    env.set_spectator_view()
 
     try:
         while True:
-            env.world.tick()
+            env.tick(control=None)
             time.sleep(0.02)
     except KeyboardInterrupt:
         settings = env.world.get_settings()

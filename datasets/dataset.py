@@ -20,12 +20,13 @@ class RoadDamageDataset(Dataset):
         )
         self.images = os.listdir(self.image_dir)
         self.annotations = {}
-        for image_filename in self.images:
-            annotation_path = os.path.join(
-                self.annotation_dir, image_filename.replace(".jpg", ".xml")
-            )
-            annotation = parse_annotation(annotation_path)
-            self.annotations[image_filename] = annotation
+        if self.annotation_dir is not None:
+            for image_filename in self.images:
+                annotation_path = os.path.join(
+                    self.annotation_dir, image_filename.replace(".jpg", ".xml")
+                )
+                annotation = parse_annotation(annotation_path)
+                self.annotations[image_filename] = annotation
 
     def __getitem__(
         self, index: int

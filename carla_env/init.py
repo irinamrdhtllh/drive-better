@@ -6,10 +6,10 @@ import time
 import carla
 import cv2
 
-from helper import is_used
-from config import read_config
-from sensors.sensor_factory import SensorFactory
-from sensors.sensor_interface import SensorInterface
+from .helper import is_used
+from .config import read_config
+from .sensors.sensor_factory import SensorFactory
+from .sensors.sensor_interface import SensorInterface
 
 
 class InitEnv:
@@ -180,18 +180,6 @@ class InitEnv:
 
     def get_sensor_data(self):
         sensor_data = self.sensor_interface.get_data()
-
-        # Check the image taken by the camera
-        # image = sensor_data["camera"][1]
-        # image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        # cv2.imshow("Front Camera", image)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-
-        # Check LiDAR data
-        # lidar = sensor_data["lidar"][1]
-        # print(lidar)
-
         return sensor_data
 
     def apply_control_hero(self): ...
@@ -339,43 +327,22 @@ class InitEnv:
     def destroy(self):
         if len(self.vehicles_list) > 0:
             # Destroy all vehicles
-            print(f"Destroying {len(env.vehicles_list)} vehicles")
-            env.client.apply_batch(
-                [carla.command.DestroyActor(x) for x in env.vehicles_list]
+            print(f"Destroying {len(self.vehicles_list)} vehicles")
+            self.client.apply_batch(
+                [carla.command.DestroyActor(x) for x in self.vehicles_list]
             )
             self.vehicles_list = []
 
         if len(self.walkers_list) > 0:
             # Stop walkers' controller
-            for i in range(0, len(env.all_walkers), 2):
-                env.all_walkers[i].stop()
+            for i in range(0, len(self.all_walkers), 2):
+                self.all_walkers[i].stop()
 
             # Destroy all walkers
-            print(f"Destroying {len(env.walkers_list)} walkers")
-            env.client.apply_batch(
-                [carla.command.DestroyActor(x) for x in env.all_walkers_id]
+            print(f"Destroying {len(self.walkers_list)} walkers")
+            self.client.apply_batch(
+                [carla.command.DestroyActor(x) for x in self.all_walkers_id]
             )
             self.walkers_list = []
             self.all_walkers = []
             self.all_walkers_id = []
-
-
-if __name__ == "__main__":
-    config = read_config()
-    env = InitEnv(config)
-    env.setup_experiment()
-    env.reset_hero()
-    env.generate_traffic()
-
-    try:
-        while True:
-            env.tick(control=None)
-            time.sleep(0.02)
-    except KeyboardInterrupt:
-        settings = env.world.get_settings()
-        settings.synchronous_mode = False
-        env.world.apply_settings(settings)
-
-        env.destroy()
-
-        time.sleep(0.5)

@@ -1,4 +1,3 @@
-import os
 import logging
 import random
 import subprocess
@@ -7,7 +6,6 @@ import carla
 import cv2
 
 from .helper import is_used
-from .config import read_config
 from .sensors.sensor_factory import SensorFactory
 from .sensors.sensor_interface import SensorInterface
 

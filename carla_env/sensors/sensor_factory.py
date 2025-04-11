@@ -1,4 +1,4 @@
-from sensors.sensors import (
+from .sensors import (
     CameraRGB,
     CameraDepth,
     Lidar,

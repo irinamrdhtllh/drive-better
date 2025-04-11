@@ -1,10 +1,14 @@
 import os
 import argparse
+import time
+import cv2
 import torch
 import torch.optim as optim
 
-from torch.utils.data import ConcatDataset, random_split
+from torch.utils.data import ConcatDataset
 
+from carla_env.config import read_config
+from carla_env.init import InitEnv
 from datasets.dataset import RoadDamageDataset
 from models.model import FasterRCNN_ResNet50, YOLO11
 from scripts.train import train
@@ -17,9 +21,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--mode",
         type=str,
-        choices=["train", "test"],
+        choices=["train", "test", "inference"],
         required=True,
-        help="Mode: 'train' or 'test'",
+        help="Mode: 'train', 'test', or 'inference'",
     )
     parser.add_argument(
         "--device",
@@ -127,3 +131,41 @@ if __name__ == "__main__":
             if image_filename:
                 image_path = os.path.join(sample_data.image_dir, image_filename)
                 visualize_boxes(image_path, targets[1], predictions[1])
+    elif args.mode == "inference":
+        config = read_config()
+        env = InitEnv(config)
+        env.setup_experiment()
+        env.reset_hero()
+        env.generate_traffic()
+
+        # Let actors finish spawning and physics settle
+        for _ in range(20):
+            env.tick(control=None)
+            time.sleep(0.05)
+
+        # Send camera image to the trained YOLO11 model to detect cracks and/or potholes
+        sensor_data = env.get_sensor_data()
+        camera_image = sensor_data["camera"][1]
+        camera_image = cv2.cvtColor(camera_image, cv2.COLOR_RGB2BGR)
+
+        model = YOLO11("./runs/detect/train/weights/best.pt")
+        results = model.predict([camera_image])
+
+        for result in results:
+            boxes = result.boxes
+            masks = result.masks
+            keypoints = result.keypoints
+            probs = result.probs
+            obb = result.obb
+            result.show()
+
+        try:
+            while True:
+                env.tick(control=None)
+                time.sleep(0.02)
+        except KeyboardInterrupt:
+            settings = env.world.get_settings()
+            settings.synchronous_mode = False
+            env.world.apply_settings(settings)
+            env.destroy()
+            time.sleep(0.5)

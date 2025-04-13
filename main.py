@@ -18,19 +18,26 @@ from utils import train_val_split, xml_to_yolotxt, visualize_boxes
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--mode",
-        type=str,
-        choices=["train", "test", "inference"],
-        required=True,
-        help="Mode: 'train', 'test', or 'inference'",
-    )
+
     parser.add_argument(
         "--device",
         type=str,
+        choices=["cpu", "cuda"],
         default="cuda" if torch.cuda.is_available() else "cpu",
-        help="Device: 'cpu' or 'cuda'",
+        help="device to use the model",
     )
+
+    parser.add_argument(
+        "--model",
+        type=str,
+        choices=["frcnn", "yolo"],
+        help="'frcnn': Faster R-CNN, 'yolo': YOLOv11",
+    )
+
+    subparsers = parser.add_subparsers(dest="command")
+    train_subparser = subparsers.add_parser("train")
+    test_subparser = subparsers.add_parser("test")
+    inference_subparser = subparsers.add_parser("inference")
 
     return parser.parse_args()
 
@@ -76,10 +83,11 @@ def load_datasets(dataset_dir: str, split: str = "train") -> ConcatDataset:
 
 if __name__ == "__main__":
     args = parse_args()
+    print(args)
     device = torch.device(args.device)
     dataset_dir = "./datasets/dataset"
 
-    if args.mode == "train":
+    if args.command == "train":
         # Prepare the train and val datasets
         prepare_datasets(dataset_dir)
 
@@ -89,49 +97,82 @@ if __name__ == "__main__":
         print("Dataset loaded successfully. Starting to train the model.")
 
         # Define the model
-        # model = FasterRCNN_ResNet50().to(device)
-        # params = [p for p in model.parameters() if p.requires_grad]
-        # optimizer = optim.SGD(params, lr=0.01, momentum=0.9, weight_decay=0.005)
-        # lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.9)
+        if args.model == "frcnn":
+            model = FasterRCNN_ResNet50().to(device)
+            params = [p for p in model.parameters() if p.requires_grad]
+            optimizer = optim.SGD(params, lr=0.01, momentum=0.9, weight_decay=0.005)
+            lr_scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.9)
 
-        model = YOLO11()
+            train(
+                model,
+                train_data,
+                val_data,
+                optimizer,
+                lr_scheduler,
+                num_epochs=100,
+                batch_size=4,
+                image_size=640,
+                device=device,
+            )
 
-        train(
-            model,
-            train_data,
-            val_data,
-            num_epochs=100,
-            batch_size=4,
-            image_size=640,
-            device=device,
-        )
-    elif args.mode == "test":
+        elif args.model == "yolo":
+            model = YOLO11()
+
+            train(
+                model,
+                train_data,
+                val_data,
+                num_epochs=100,
+                batch_size=4,
+                image_size=640,
+                device=device,
+            )
+
+    elif args.command == "test":
         test_data = load_datasets(dataset_dir, split="test")
 
         print("Dataset loaded sucessfully. Starting to test the model.")
 
-        model = FasterRCNN_ResNet50().to(device)
-        predictions, targets = test(model, test_data, device)
+        if args.model == "frcnn":
+            model = FasterRCNN_ResNet50().to(device)
+            predictions, targets = test(model, test_data, device)
 
-        # Average confidence score
-        total_score = 0
-        num_predictions = 0
-        for prediction in predictions:
-            for score in prediction["scores"]:
-                total_score += score
-                num_predictions += 1
-        avg_score = total_score / num_predictions
+            # Average confidence score
+            total_score = 0
+            num_predictions = 0
+            for prediction in predictions:
+                for score in prediction["scores"]:
+                    total_score += score
+                    num_predictions += 1
+            avg_score = total_score / num_predictions
 
-        print(f"Avg confidence score: {avg_score:.4f}")
+            print(f"Avg confidence score: {avg_score:.4f}")
 
-        # Visualize ground truth and predictions
-        if targets is not None:
-            sample_data = test_data.datasets[5]
-            image_filename = sample_data.images[1] if sample_data.images else None
-            if image_filename:
-                image_path = os.path.join(sample_data.image_dir, image_filename)
-                visualize_boxes(image_path, targets[1], predictions[1])
-    elif args.mode == "inference":
+            # Visualize ground truth and predictions
+            if targets is not None:
+                sample_data = test_data.datasets[5]
+                image_filename = sample_data.images[1] if sample_data.images else None
+                if image_filename:
+                    image_path = os.path.join(sample_data.image_dir, image_filename)
+                    visualize_boxes(image_path, targets[1], predictions[1])
+
+        elif args.model == "yolo":
+            model = YOLO11("./runs/detect/train/weights/best.pt")
+            results = test(
+                model,
+                "./datasets/dataset/united_states/test/images/United_States_004805.jpg",
+                device,
+            )
+
+            for result in results:
+                boxes = result.boxes
+                masks = result.masks
+                keypoints = result.keypoints
+                probs = result.probs
+                obb = result.obb
+                result.show()
+
+    elif args.command == "inference":
         config = read_config()
         env = InitEnv(config)
         env.setup_experiment()
@@ -139,9 +180,8 @@ if __name__ == "__main__":
         env.generate_traffic()
 
         # Let actors finish spawning and physics settle
-        for _ in range(20):
+        for _ in range(10):
             env.tick(control=None)
-            time.sleep(0.05)
 
         # Send camera image to the trained YOLO11 model to detect cracks and/or potholes
         sensor_data = env.get_sensor_data()

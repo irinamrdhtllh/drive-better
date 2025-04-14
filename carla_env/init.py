@@ -155,6 +155,8 @@ class InitEnv:
                     name, attributes, self.sensor_interface, self.hero
                 )
 
+        self.hero.set_autopilot(True)
+
     def set_spectator_view(self):
         transform = self.hero.get_transform()
 

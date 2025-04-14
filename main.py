@@ -1,6 +1,7 @@
 import os
 import argparse
 import time
+import imageio
 import cv2
 import torch
 import torch.optim as optim
@@ -183,27 +184,24 @@ if __name__ == "__main__":
         for _ in range(10):
             env.tick(control=None)
 
-        # Send camera image to the trained YOLO11 model to detect cracks and/or potholes
-        sensor_data = env.get_sensor_data()
-        camera_image = sensor_data["camera"][1]
-        camera_image = cv2.cvtColor(camera_image, cv2.COLOR_RGB2BGR)
-
         model = YOLO11("./runs/detect/train/weights/best.pt")
-        results = model.predict([camera_image])
-
-        for result in results:
-            boxes = result.boxes
-            masks = result.masks
-            keypoints = result.keypoints
-            probs = result.probs
-            obb = result.obb
-            result.show()
 
         try:
+            images = []
             while True:
-                env.tick(control=None)
+                sensor_data = env.tick(control=None)
+                camera_image = sensor_data["camera"][1]
+                results = model.predict([camera_image])
+                for result in results:
+                    boxes = result.boxes
+                    masks = result.masks
+                    keypoints = result.keypoints
+                    probs = result.probs
+                    obb = result.obb
+                    images.append(result.plot())
                 time.sleep(0.02)
         except KeyboardInterrupt:
+            imageio.mimsave(f"automatic-control.gif", images, duration=30)
             settings = env.world.get_settings()
             settings.synchronous_mode = False
             env.world.apply_settings(settings)

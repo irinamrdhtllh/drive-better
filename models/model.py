@@ -32,13 +32,8 @@ class FasterRCNN_ResNet50(nn.Module):
 
 
 class YOLO11:
-    def __init__(self, resume=False):
-        if resume:
-            self.model = YOLO("./runs/detect/train/weights/last.pt")
-        else:
-            self.model = YOLO("yolo11n.pt")
-
-        self.resume = resume
+    def __init__(self, model: str = "yolo11n.pt"):
+        self.model = YOLO(model)
 
     def train(
         self,
@@ -48,6 +43,7 @@ class YOLO11:
         image_size: int,
         device: str,
         initial_lr: float,
+        resume: bool = False,
     ):
         self.model.train(
             data=data,
@@ -56,7 +52,7 @@ class YOLO11:
             imgsz=image_size,
             device=device,
             lr0=initial_lr,
-            resume=self.resume,
+            resume=resume,
         )
 
     def evaluate(self):

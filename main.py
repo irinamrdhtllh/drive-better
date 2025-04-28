@@ -159,11 +159,11 @@ if __name__ == "__main__":
 
         elif args.model == "yolo":
             model = YOLO11("./runs/detect/train/weights/best.pt")
-            results = test(
-                model,
-                "./datasets/dataset/united_states/test/images/United_States_004805.jpg",
-                device,
+
+            image_path = (
+                "./datasets/dataset/united_states/test/images/United_States_004805.jpg"
             )
+            results = test(model, image_path, device)
 
             for result in results:
                 boxes = result.boxes
@@ -172,6 +172,7 @@ if __name__ == "__main__":
                 probs = result.probs
                 obb = result.obb
                 result.show()
+                # result.save(filename=os.path.basename(image_path))
 
     elif args.command == "inference":
         config = read_config()
@@ -201,7 +202,7 @@ if __name__ == "__main__":
                     images.append(result.plot())
                 time.sleep(0.02)
         except KeyboardInterrupt:
-            imageio.mimsave(f"automatic-control.gif", images, duration=30)
+            imageio.mimsave(f"automatic-control.gif", images)
             settings = env.world.get_settings()
             settings.synchronous_mode = False
             env.world.apply_settings(settings)
